@@ -1,30 +1,19 @@
+# The inherited workflow published to skullbite/gnome-add-to-steam.
+# Fork validation and packaging now run in testing-ci.yml; no upstream publishing.
+name: Manual package
 on:
-    workflow_dispatch:
-
-    push:
-        branches:
-            - main
-
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup Just
-              uses: extractions/setup-just@v3
-
-            - name: Zip Extension
-              run: |
-                just zip-extension
-            
-
-            - name: Release
-              uses: softprops/action-gh-release@v2
-              with:
-                tag_name: nightly
-                repository: skullbite/gnome-add-to-steam
-                token: ${{ secrets.ATS_TOKEN }}
-                files: gnome-add-to-steam@pupper.space.zip
-         
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: zip -r extension.zip schemas/*.gschema.xml add-to-steam.py *.js metadata.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: add-to-steam
+          path: extension.zip

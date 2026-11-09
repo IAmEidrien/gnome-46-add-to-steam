@@ -1,7 +1,7 @@
 // Repository-local promotion controller. Candidate code never runs with this token.
 'use strict';
 const fs = require('node:fs');
-const HOURS = 72 * 60 * 60 * 1000;
+const HOURS = 7 * 24 * 60 * 60 * 1000;
 const CI = 'testing-ci.yml';
 
 function receipt(runs, sha) {
@@ -17,7 +17,7 @@ function decision({pr, sha, run, now = Date.now(), extraRuns = [], statuses = []
     if (pr.labels.some(l => l.name === 'do-not-merge')) return 'Paused by do-not-merge';
     if (pr.head.sha !== sha) return 'Testing changed';
     if (!run || run.head_sha !== sha || !Number.isFinite(Date.parse(run.created_at))) return 'No current push receipt';
-    if (now - Date.parse(run.created_at) < HOURS) return '72-hour quiet period is not complete';
+    if (now - Date.parse(run.created_at) < HOURS) return '7-day quiet period is not complete';
     if (run.status !== 'completed' || run.conclusion !== 'success') return 'Required validation has not passed';
     if (extraRuns.some(r => r.status !== 'completed' || r.conclusion !== 'success')) return 'Additional push CI has not passed';
     if (statuses.some(s => s.state !== 'success')) return 'Commit status has not passed';
@@ -54,7 +54,7 @@ async function main({github, context, core}) {
                 commit_message: `Merge ${base} into testing before validation`});
             if (merged.status !== 204) {
                 await github.rest.actions.createWorkflowDispatch({...args, workflow_id: CI, ref: 'testing'});
-                return report('Release changes merged into testing; validation and the 72-hour period restarted.');
+                return report('Release changes merged into testing; validation and the 7-day period restarted.');
             }
         } catch (error) {
             if (error.status === 409) return report('Testing conflicts with the release branch; maintainer resolution required.');
